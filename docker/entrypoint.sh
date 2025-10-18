@@ -1,28 +1,28 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 echo "Starting Krayin CRM..."
 
 # Ensure proper permissions
-chown -R www-data:www-data /app/storage /app/bootstrap/cache
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Create directories if they don't exist
-mkdir -p /app/storage/framework/{sessions,views,cache}
-mkdir -p /app/storage/logs
-mkdir -p /app/bootstrap/cache
+mkdir -p /var/www/html/storage/framework/{sessions,views,cache}
+mkdir -p /var/www/html/storage/logs
+mkdir -p /var/www/html/bootstrap/cache
 
 # Set permissions
-chmod -R 775 /app/storage
-chmod -R 775 /app/bootstrap/cache
+chmod -R 775 /var/www/html/storage
+chmod -R 775 /var/www/html/bootstrap/cache
 
 # Clear and cache Laravel configuration (only if not already cached)
-if [ ! -f /app/bootstrap/cache/config.php ]; then
+if [ ! -f /var/www/html/bootstrap/cache/config.php ]; then
     echo "Caching configuration..."
     php artisan config:cache
 fi
 
 # Cache routes (only if not already cached)
-if [ ! -f /app/bootstrap/cache/routes-v7.php ]; then
+if [ ! -f /var/www/html/bootstrap/cache/routes-v7.php ]; then
     echo "Caching routes..."
     php artisan route:cache
 fi
@@ -37,5 +37,5 @@ php artisan view:cache
 
 echo "Krayin CRM ready!"
 
-# Execute the main command
+# Execute the main command (apache2-foreground)
 exec "$@"

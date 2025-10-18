@@ -1,88 +1,79 @@
 # Production Dockerfile for Krayin CRM
-FROM php:8.2-fpm-alpine AS base
+# Based on official Krayin Dockerfile adapted for standalone deployment
+FROM php:8.2-apache
 
 # Install system dependencies
-RUN apk add --no-cache \
-    nginx \
-    supervisor \
-    zip \
-    unzip \
+RUN apt-get update && apt-get install -y \
     git \
-    curl \
+    libfreetype6-dev \
+    libicu-dev \
+    libjpeg62-turbo-dev \
     libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
+    libwebp-dev \
     libzip-dev \
-    icu-dev \
-    oniguruma-dev \
-    c-client \
-    imap-dev \
-    openssl-dev \
-    krb5-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
-    && docker-php-ext-install -j$(nproc) \
-        pdo_mysql \
-        mysqli \
-        gd \
-        zip \
-        intl \
-        opcache \
-        bcmath \
-        exif \
-        pcntl \
-        imap \
-        calendar
+    unzip \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Configure PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
+RUN docker-php-ext-configure intl
+
+# Install PHP extensions
+RUN docker-php-ext-install \
+    bcmath \
+    calendar \
+    exif \
+    gd \
+    intl \
+    mysqli \
+    pdo \
+    pdo_mysql \
+    zip
 
 # Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/local/bin/composer
 
 # Install Node.js and npm
-RUN apk add --no-cache nodejs npm
+COPY --from=node:22.9 /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:22.9 /usr/local/bin/node /usr/local/bin/node
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 
-WORKDIR /app
+# Set working directory
+WORKDIR /var/www/html
 
-# Copy all application code first
-COPY . .
+# Copy Apache configuration
+COPY ./docker/apache.conf /etc/apache2/sites-available/000-default.conf
+
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
+
+# Copy application code
+COPY . /var/www/html
 
 # Install PHP dependencies (production only)
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-dev --optimize-autoloader --prefer-dist
 
-# Install Node dependencies
-RUN npm install
-
-# Build frontend assets
-RUN npm run build
-
-# Generate optimized autoloader
-RUN composer dump-autoload --optimize --no-dev
+# Install Node dependencies and build assets
+RUN npm install && npm run build
 
 # Set permissions
-RUN chown -R www-data:www-data /app \
-    && chmod -R 755 /app/storage \
-    && chmod -R 755 /app/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Copy configuration files from the already-copied app directory
-RUN cp /app/docker/nginx.conf /etc/nginx/nginx.conf \
-    && cp /app/docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf \
-    && cp /app/docker/entrypoint.sh /usr/local/bin/entrypoint.sh \
-    && chmod +x /usr/local/bin/entrypoint.sh
-
-# Configure PHP-FPM
+# Configure PHP for production
 RUN echo "upload_max_filesize = 100M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/memory.ini \
     && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/timeouts.ini
 
-# Configure OPcache for production
-RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.memory_consumption=256" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.interned_strings_buffer=16" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/opcache.ini \
-    && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini
+# Copy entrypoint script
+COPY ./docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["apache2-foreground"]
