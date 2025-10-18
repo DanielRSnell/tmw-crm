@@ -17,26 +17,43 @@ chmod -R 775 /var/www/html/bootstrap/cache
 
 # Wait for database to be ready
 echo "Waiting for database connection..."
-php artisan db:monitor --max-attempts=30 || echo "Database check failed, continuing anyway..."
+max_attempts=30
+attempt=0
+until php artisan db:monitor --max-attempts=1 2>/dev/null || [ $attempt -eq $max_attempts ]; do
+    attempt=$((attempt + 1))
+    echo "Database connection attempt $attempt/$max_attempts..."
+    sleep 2
+done
 
-# Run migrations first (required before package discovery can access crm_core_config table)
+if [ $attempt -eq $max_attempts ]; then
+    echo "Failed to connect to database after $max_attempts attempts"
+    exit 1
+fi
+
+echo "Database connection established!"
+
+# Run migrations WITHOUT loading service providers that need existing tables
 echo "Running migrations..."
-php artisan migrate --force
+# Temporarily disable the mail receiver driver to prevent IMAP connection during migrations
+MAIL_RECEIVER_DRIVER=sendgrid php artisan migrate --force
 
-# Discover packages (skipped during build to avoid database access)
+# Now discover packages with the real configuration
 echo "Discovering packages..."
 php artisan package:discover --ansi
 
 # Clear and cache Laravel configuration
 echo "Caching configuration..."
+php artisan config:clear
 php artisan config:cache
 
 # Cache routes
 echo "Caching routes..."
+php artisan route:clear
 php artisan route:cache
 
 # Cache views
 echo "Caching views..."
+php artisan view:clear
 php artisan view:cache
 
 echo "Krayin CRM ready!"
