@@ -31,7 +31,8 @@ RUN apk add --no-cache \
         bcmath \
         exif \
         pcntl \
-        imap
+        imap \
+        calendar
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
