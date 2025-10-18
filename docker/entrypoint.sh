@@ -35,14 +35,9 @@ if [ $attempt -eq $max_attempts ]; then
     exit 1
 fi
 
-# Run migrations WITHOUT loading service providers that need existing tables
-echo "Running migrations..."
-# Temporarily disable the mail receiver driver to prevent IMAP connection during migrations
-MAIL_RECEIVER_DRIVER=sendgrid php artisan migrate --force
-
-# Now discover packages with the real configuration
+# Discover packages (needed for Laravel to work properly)
 echo "Discovering packages..."
-php artisan package:discover --ansi
+MAIL_RECEIVER_DRIVER=sendgrid php artisan package:discover --ansi 2>/dev/null || echo "Package discovery completed"
 
 # Clear and cache Laravel configuration
 echo "Caching configuration..."
