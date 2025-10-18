@@ -244,8 +244,11 @@
 
                     this.isLoading = true;
 
+                    // Force HTTPS for the URL to prevent mixed content errors
+                    let requestUrl = this.src.replace(/^http:/, 'https:');
+
                     this.$axios
-                        .get(this.src, {
+                        .get(requestUrl, {
                             params: { ...params, ...extraParams }
                         })
                         .then((response) => {

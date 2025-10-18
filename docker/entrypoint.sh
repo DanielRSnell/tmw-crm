@@ -39,19 +39,12 @@ fi
 echo "Discovering packages..."
 MAIL_RECEIVER_DRIVER=sendgrid php artisan package:discover --ansi 2>/dev/null || echo "Package discovery completed"
 
-# Clear and cache Laravel configuration
-echo "Caching configuration..."
+# Clear all caches
+echo "Clearing caches..."
 php artisan config:clear
-php artisan config:cache
-
-# Clear route cache (don't cache due to duplicate route name issue in Krayin)
-echo "Clearing route cache..."
 php artisan route:clear
-
-# Cache views
-echo "Caching views..."
 php artisan view:clear
-php artisan view:cache
+php artisan cache:clear
 
 echo "Krayin CRM ready!"
 

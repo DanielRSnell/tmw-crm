@@ -67,7 +67,10 @@ RUN chown -R www-data:www-data /var/www/html \
 RUN echo "upload_max_filesize = 100M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/memory.ini \
-    && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/timeouts.ini
+    && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/timeouts.ini \
+    && echo "display_errors = On" >> /usr/local/etc/php/conf.d/errors.ini \
+    && echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/errors.ini \
+    && echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/errors.ini
 
 # Copy entrypoint script
 COPY ./docker/entrypoint.sh /usr/local/bin/entrypoint.sh
