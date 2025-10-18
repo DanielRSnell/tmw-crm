@@ -44,10 +44,9 @@ echo "Caching configuration..."
 php artisan config:clear
 php artisan config:cache
 
-# Cache routes
-echo "Caching routes..."
+# Clear route cache (don't cache due to duplicate route name issue in Krayin)
+echo "Clearing route cache..."
 php artisan route:clear
-php artisan route:cache
 
 # Cache views
 echo "Caching views..."
