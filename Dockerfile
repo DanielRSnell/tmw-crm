@@ -52,7 +52,9 @@ RUN a2enmod rewrite
 COPY . /var/www/html
 
 # Install PHP dependencies (production only)
-RUN composer install --no-dev --optimize-autoloader --prefer-dist
+# Set APP_ENV to local and disable package discovery during build to prevent database access
+RUN APP_ENV=local composer install --no-dev --optimize-autoloader --prefer-dist --no-scripts && \
+    composer dump-autoload --optimize
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build

@@ -15,25 +15,29 @@ mkdir -p /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
 
-# Clear and cache Laravel configuration (only if not already cached)
-if [ ! -f /var/www/html/bootstrap/cache/config.php ]; then
-    echo "Caching configuration..."
-    php artisan config:cache
-fi
+# Wait for database to be ready
+echo "Waiting for database connection..."
+php artisan db:monitor --max-attempts=30 || echo "Database check failed, continuing anyway..."
 
-# Cache routes (only if not already cached)
-if [ ! -f /var/www/html/bootstrap/cache/routes-v7.php ]; then
-    echo "Caching routes..."
-    php artisan route:cache
-fi
+# Run migrations first (required before package discovery can access crm_core_config table)
+echo "Running migrations..."
+php artisan migrate --force
+
+# Discover packages (skipped during build to avoid database access)
+echo "Discovering packages..."
+php artisan package:discover --ansi
+
+# Clear and cache Laravel configuration
+echo "Caching configuration..."
+php artisan config:cache
+
+# Cache routes
+echo "Caching routes..."
+php artisan route:cache
 
 # Cache views
 echo "Caching views..."
 php artisan view:cache
-
-# Run migrations (optional - comment out if you want to run manually)
-# echo "Running migrations..."
-# php artisan migrate --force
 
 echo "Krayin CRM ready!"
 
