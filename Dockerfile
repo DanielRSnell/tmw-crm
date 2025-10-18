@@ -41,20 +41,14 @@ RUN apk add --no-cache nodejs npm
 
 WORKDIR /app
 
-# Copy composer files first for better layer caching
-COPY composer.json composer.lock ./
+# Copy all application code first
+COPY . .
 
 # Install PHP dependencies (production only)
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# Copy package files
-COPY package.json package-lock.json ./
-
 # Install Node dependencies
 RUN npm ci --production=false
-
-# Copy application code
-COPY . .
 
 # Build frontend assets
 RUN npm run build
