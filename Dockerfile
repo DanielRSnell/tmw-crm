@@ -52,14 +52,8 @@ RUN a2enmod rewrite
 COPY . /var/www/html
 
 # Install PHP dependencies (production only)
-# Use sqlite in-memory database during build to avoid MySQL connection
-RUN echo "APP_ENV=local" > .env && \
-    echo "APP_KEY=base64:AAA=" >> .env && \
-    echo "DB_CONNECTION=sqlite" >> .env && \
-    echo "DB_DATABASE=:memory:" >> .env && \
-    echo "MAIL_RECEIVER_DRIVER=webklex-imap" >> .env && \
-    composer install --no-dev --optimize-autoloader --prefer-dist && \
-    rm .env
+# Skip package discovery during build - will run at container startup
+RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-scripts --no-plugins
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build
