@@ -49,7 +49,7 @@ COPY . .
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
 # Install Node dependencies
-RUN npm ci --production=false
+RUN npm install
 
 # Build frontend assets
 RUN npm run build
