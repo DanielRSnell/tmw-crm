@@ -46,6 +46,10 @@ php artisan route:clear
 php artisan view:clear
 php artisan cache:clear
 
+# Generate Swagger API documentation with correct APP_URL
+echo "Generating API documentation..."
+php artisan l5-swagger:generate || echo "Swagger generation skipped"
+
 echo "Krayin CRM ready!"
 
 # Execute the main command (apache2-foreground)
